@@ -17,6 +17,7 @@ import { useLoading } from '../contexts/LoadingContext';
 import AppTheme from '../theme/AppTheme';
 import { Button, Checkbox, CssBaseline, FormControlLabel, Stack, styled } from '@mui/material';
 import ColorModeSelect from '../theme/ColorModeSelect';
+import HostSelect from '../components/Select/HostSelectProps';
 
 registerLocale('es', es);
 setDefaultLocale('es');
@@ -62,6 +63,8 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<Record<string, boolean>>({});
   const { setIsLoading } = useLoading();
+  const [isSearchingDNI, setIsSearchingDNI] = useState(false);
+  const [userFound, setUserFound] = useState(false);
 
   useEffect(() => {
     const fetchHosts = async () => {
@@ -108,11 +111,50 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
         } finally {
           setIsLoading(false);
         }
-      };
+    };
 
     fetchHeaderData();
     fetchHosts();
   }, []);
+
+  const clearForm = () => {
+    setFormData(prev => ({
+      ...prev,
+      name: '',
+      lastname: '',
+      email: '',
+      phone: '',
+      birthDate: null,
+      host: '',
+      consent: false
+    }));
+    setUserFound(false);
+  };
+
+  const searchUserByDNI = async (dni: string) => {
+    setIsSearchingDNI(true);
+    try {
+      const response = await fetch(`https://borderline-app-backend.onrender.com/api/customers/${dni}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const userData = await response.json();
+      setFormData(prev => ({
+        ...prev,
+        name: userData.name || '',
+        lastname: userData.lastname || '',
+        email: userData.email || '',
+        phone: userData.phone || '',
+        birthDate: userData.birthDate ? new Date(userData.birthDate) : null
+      }));
+      setUserFound(true);
+    } catch (error) {
+      console.error('Error searching user:', error);
+      setUserFound(false);
+    } finally {
+      setIsSearchingDNI(false);
+    }
+  };
 
   const registerClient = async (clientData: typeof formData) => {
     const formattedData = {
@@ -140,6 +182,20 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+
+    if (name === 'documentNumber') {
+      if (value.length < 8) {
+        clearForm();
+      }
+      const numericValue = value.replace(/\D/g, '');
+      if (numericValue !== value) {
+        return;
+      }
+      if (value.length === 8) {
+        searchUserByDNI(value);
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -182,6 +238,12 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
   
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab') {
+      e.preventDefault();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -230,6 +292,10 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
                 placeholder="DNI"
                 value={formData.documentNumber}
                 onChange={handleChange}
+                onKeyPress={handleKeyPress}
+                maxLength={8}
+                inputMode="numeric"
+                pattern="\d*"
                 hasError={validationErrors.documentNumber}
               />
               <Input
@@ -239,6 +305,7 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
                 value={formData.name}
                 onChange={handleChange}
                 hasError={validationErrors.name}
+                disabled={userFound}
               />
               <Input
                 type="text"
@@ -247,6 +314,7 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
                 value={formData.lastname}
                 onChange={handleChange}
                 hasError={validationErrors.lastname}
+                disabled={userFound}
               />
               <Input
                 type="email"
@@ -255,6 +323,7 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
                 value={formData.email}
                 onChange={handleChange}
                 hasError={validationErrors.email}
+                disabled={userFound}
               />
               <Input
                 type="text"
@@ -263,6 +332,7 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
                 value={formData.phone}
                 onChange={handleChange}
                 hasError={validationErrors.phone}
+                disabled={userFound}
               />
               <StyledDatePicker
                 selected={formData.birthDate}
@@ -275,20 +345,16 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
                 yearDropdownItemNumber={100}
                 dateFormat="dd/MM/yyyy"
                 className={validationErrors.birthDate ? 'error' : ''}
+                disabled={userFound}
               />
-              <StyledSelect
-                name="host"
-                value={formData.host}
-                onChange={handleChange}
-                className={validationErrors.host ? 'error' : ''}
-              >
-                <option value="">Selecciona</option>
-                {hosts.map((host) => (
-                  <option key={host._id} value={host._id}>
-                    {host.name} {host.lastname}
-                  </option>
-                ))}
-              </StyledSelect>
+              <HostSelect
+              hosts={hosts}
+              value={formData.host}
+              onChange={(value) => handleChange({
+                target: { name: 'host', value }
+              } as React.ChangeEvent<HTMLSelectElement>)}
+              hasError={validationErrors.host}
+              />
             <FormControlLabel
               control={<Checkbox onChange={handleCheckboxChange} checked={formData.consent} name="termsAccepted" value="termsAccepted" color="primary" />}
               label="Acepto los términos y condiciones"
