@@ -1,25 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import "react-datepicker/dist/react-datepicker.css";
-import { registerLocale, setDefaultLocale } from "react-datepicker";
-import { es } from 'date-fns/locale/es';
 import { format } from 'date-fns';
 import {
   FormContainer,
   Input,
-  StyledDatePicker,
   ErrorMessage
 } from '../styles/RedeemStyles';
 import { Host } from '../interfaces/Host';
 import { HeaderData } from '../interfaces/HeaderData';
 import { useLoading } from '../contexts/LoadingContext';
 import AppTheme from '../theme/AppTheme';
-import { Button, Checkbox, CssBaseline, FormControlLabel, Stack, styled } from '@mui/material';
+import { Box, Button, Checkbox, CssBaseline, FormControl, FormControlLabel, FormLabel, Link, Stack, styled, TextField, Typography } from '@mui/material';
 import ColorModeSelect from '../theme/ColorModeSelect';
 import HostSelect from '../components/Select/HostSelectProps';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-
-registerLocale('es', es);
-setDefaultLocale('es');
+import BirthDatePicker from '../components/DatePicker/BirthDatePickerProps';
+import MuiCard from '@mui/material/Card';
+import TermAndConditions from '../components/TermAndConditions/TermAndConditions';
 
 const SignInContainer = styled(Stack)(({ theme }) => ({
   height: 'calc((1 - var(--template-frame-height, 0)) * 100dvh)',
@@ -44,6 +40,30 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
   },
 }));
 
+const Card = styled(MuiCard)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  alignSelf: 'center',
+  width: '115%',
+  padding: theme.spacing(4),
+  gap: theme.spacing(2),
+  margin: 'auto',
+  [theme.breakpoints.up('sm')]: {
+    maxWidth: '500px',
+  },
+  boxShadow:
+    'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
+  ...theme.applyStyles('dark', {
+    boxShadow:
+      'hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px',
+  }),
+}));
+
+const defaultHeaderData = {
+  title: 'FIESTAS BRAVAS',
+  description: 'Obtén tu entrada gratis a la mejor fiesta de la ciudad',
+};
+
 const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
   const [formData, setFormData] = useState({
     documentNumber: '',
@@ -67,6 +87,7 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
   const [searchParams] = useSearchParams();
   const hostParam = searchParams.get('host');
   const [isValidHost, setIsValidHost] = useState(false);
+  const [open, setOpen] = React.useState(false);
 
   useEffect(() => {
     const fetchHosts = async () => {
@@ -214,6 +235,9 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
     const { name, value } = e.target;
 
     if (name === 'documentNumber') {
+      if (value.length > 8) {
+        return;
+      }
       if (value.length < 8) {
         clearForm();
       }
@@ -264,8 +288,7 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
       if (!formData[field as keyof typeof formData]) {
         errors[field] = true;
       }
-    });
-  
+    });  
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -301,105 +324,185 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
   }
   };
 
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
   return (
     <AppTheme {...props}>
       <CssBaseline enableColorScheme />
       <SignInContainer direction="column" justifyContent="space-between">
-        <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
-          <FormContainer>
-              {headerError ? (
-            <p>{headerError}</p>
-          ) : headerData && headerData.length > 0 ? (
-            <>
-              <h1>{headerData[0].title}</h1>
-              <p>{headerData[0].description}</p>
-            </>
-          ) : null}
-            <form onSubmit={handleSubmit}>
-            <Input
-                type="text"
+        <Card variant="outlined">
+        <Typography
+            component="h1"
+            variant="h4"
+            sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
+          >
+            {headerData.length > 0 ? headerData[0].title : defaultHeaderData.title}
+          </Typography>
+          <Typography
+            component="p"
+            variant="h4"
+            sx={{ width: '100%', fontSize: 'clamp(1rem, 10vw, 1.15rem)' }}
+          >
+            {headerData.length > 0 ? headerData[0].description : defaultHeaderData.description}
+          </Typography>
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            noValidate
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+              gap: 2,
+            }}
+          >
+          <FormControl>
+              <FormLabel htmlFor="documentNumber">Número de documento</FormLabel>
+              <TextField
+                error={validationErrors.documentNumber}
+                id="documentNumber"
+                type="number"
                 name="documentNumber"
-                placeholder="DNI"
-                value={formData.documentNumber}
+                placeholder="Número de documento"
+                autoComplete="documentNumber"
+                autoFocus
                 onChange={handleChange}
-                onKeyPress={handleKeyPress}
-                maxLength={8}
-                inputMode="numeric"
-                pattern="\d*"
-                hasError={validationErrors.documentNumber}
+                onKeyDown={handleKeyPress}
+                required
+                fullWidth
+                variant="outlined"
+                color={validationErrors.documentNumber ? 'error' : 'primary'}
               />
-              <Input
+          </FormControl>
+          <FormControl>
+              <FormLabel htmlFor="name">Nombres</FormLabel>
+              <TextField
+                error={validationErrors.name}
+                id="name"
                 type="text"
                 name="name"
                 placeholder="Nombre"
-                value={formData.name}
+                autoComplete="name"
+                autoFocus
+                required
+                fullWidth
+                variant="outlined"
+                color={validationErrors.name ? 'error' : 'primary'}
                 onChange={handleChange}
-                hasError={validationErrors.name}
                 disabled={userFound}
+                value={formData.name}
               />
-              <Input
+          </FormControl>
+          <FormControl>
+              <FormLabel htmlFor="lastname">Apellidos</FormLabel>
+              <TextField
+                error={validationErrors.lastname}
+                id="lastname"
                 type="text"
                 name="lastname"
                 placeholder="Apellidos"
-                value={formData.lastname}
+                autoComplete="lastname"
+                autoFocus
+                required
+                fullWidth
+                variant="outlined"
+                color={validationErrors.lastname ? 'error' : 'primary'}
                 onChange={handleChange}
-                hasError={validationErrors.lastname}
                 disabled={userFound}
+                value={formData.lastname}
               />
-              <Input
+          </FormControl>
+          <FormControl>
+          <FormLabel htmlFor="email">Email</FormLabel>
+              <TextField
+                error={validationErrors.email}
+                id="email"
                 type="email"
                 name="email"
-                placeholder="Correo Electrónico"
+                placeholder="correo@email.com"
+                autoComplete="email"
+                autoFocus
+                required
+                fullWidth
+                variant="outlined"
+                color={validationErrors.email ? 'error' : 'primary'}
+                disabled={userFound}
+                onChange={handleChange}
                 value={formData.email}
-                onChange={handleChange}
-                hasError={validationErrors.email}
-                disabled={userFound}
               />
-              <Input
-                type="text"
+          </FormControl>
+          <FormControl>
+          <FormLabel htmlFor="phone">Celular</FormLabel>
+              <TextField
+                error={validationErrors.phone}
+                id="phone"
+                type="phone"
                 name="phone"
-                placeholder="Celular"
-                value={formData.phone}
+                placeholder="987654321"
+                autoComplete="phone"
+                autoFocus
+                required
+                fullWidth
+                variant="outlined"
+                color={validationErrors.phone ? 'error' : 'primary'}
+                disabled={userFound}
                 onChange={handleChange}
-                hasError={validationErrors.phone}
+                value={formData.phone}
+              />
+          </FormControl>
+          <FormControl>
+          <FormLabel htmlFor="birthDate">Fecha de nacimiento</FormLabel>
+            <BirthDatePicker
+                value={formData.birthDate}
+                onChange={(date) => handleDateChange(date, undefined)}
+                error={validationErrors.birthDate}
                 disabled={userFound}
               />
-              <StyledDatePicker
-                selected={formData.birthDate}
-                onChange={handleDateChange}
-                placeholderText="Fecha de nacimiento"
-                locale="es"
-                isClearable
-                showYearDropdown
-                scrollableYearDropdown
-                yearDropdownItemNumber={100}
-                dateFormat="dd/MM/yyyy"
-                className={validationErrors.birthDate ? 'error' : ''}
-                disabled={userFound}
-              />
-              <HostSelect
-              hosts={hosts}
-              value={formData.host}
-              onChange={(value) => handleChange({
-                target: { name: 'host', value }
-              } as React.ChangeEvent<HTMLSelectElement>)}
-              hasError={validationErrors.host}
-              disabled={isValidHost}
-              />
-            <FormControlLabel
-              control={<Checkbox onChange={handleCheckboxChange} checked={formData.consent} name="termsAccepted" value="termsAccepted" color="primary" />}
-              label="Acepto los términos y condiciones"
-            />
-            {error && <ErrorMessage>{error}</ErrorMessage>}
-              <Button 
-              type="submit"
-              variant="contained"
-              fullWidth
+          </FormControl>
+          <FormControl>
+            <FormLabel htmlFor="host">Promotor(a)</FormLabel>
+            <HostSelect
+                hosts={hosts}
+                value={formData.host}
+                onChange={(value) => handleChange({
+                  target: { name: 'host', value }
+                } as React.ChangeEvent<HTMLSelectElement>)}
+                hasError={validationErrors.host}
+                disabled={isValidHost}
+                />
+          </FormControl>
+          <TermAndConditions open={open} handleClose={handleClose} />
+          <FormControlLabel
+              control={<Checkbox value="termsAccepted" color="primary" onChange={handleCheckboxChange} name="termsAccepted" checked={formData.consent}/>}
+              label={
+                <Typography sx={{ textAlign: 'center' }}>
+              Acepto los {' '}
+              <Link
+              onClick={handleClickOpen}
+              variant="body2"
+              sx={{ alignSelf: 'center' }}
               >
+                términos y condiciones
+              </Link>
+            </Typography>
+              }
+            />
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+          <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+            >
               Enviar
-              </Button>
-            </form>
-          </FormContainer>
+            </Button>
+          </Box>
+        </Card>
       </SignInContainer>
     </AppTheme>
   );

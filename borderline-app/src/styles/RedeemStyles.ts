@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import DatePicker from "react-datepicker";
 import { Stack } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
 
@@ -35,18 +34,6 @@ export const Button = styled.button`
 `;
 
 export const StyledSelect = styled.select`
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-
-  &.error {
-    border-color: #ff0000;
-  }
-`;
-
-export const StyledDatePicker = styled(DatePicker)`
   width: 100%;
   padding: 10px;
   margin-bottom: 1rem;

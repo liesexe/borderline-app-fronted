@@ -2,7 +2,7 @@ import * as React from 'react';
 import MenuItem from '@mui/material/MenuItem';
 import Select, { SelectProps } from '@mui/material/Select';
 import FormControl from '@mui/material/FormControl';
-import { styled } from '@mui/material/styles';
+import { responsiveFontSizes, styled } from '@mui/material/styles';
 import { FormHelperText } from '@mui/material';
 
 interface Host {
@@ -21,11 +21,11 @@ interface HostSelectProps extends Omit<SelectProps, 'onChange'> {
 const StyledFormControl = styled(FormControl, {
     shouldForwardProp: (prop) => prop !== 'hasError',
   })<{ hasError?: boolean }>(({ theme, hasError }) => ({
-    marginBottom: '1rem',
     '& .MuiOutlinedInput-root': {
       '& fieldset': {
         borderColor: hasError ? theme.palette.error.main : theme.palette.divider,
         borderWidth: hasError ? 2 : 1,
+        fontSize: 100
       },
       '&:hover fieldset': {
         borderColor: hasError ? theme.palette.error.main : theme.palette.primary.main,
@@ -51,7 +51,7 @@ export default function HostSelect({ hosts, value, hasError, onChange, ...props 
         {...props}
       >
         <MenuItem value="" disabled>
-          <em>Selecciona anfitrion(a)</em>
+          <em>Selecciona promotor(a)</em>
         </MenuItem>
         {hosts.map((host) => (
           <MenuItem key={host._id} value={host._id}>

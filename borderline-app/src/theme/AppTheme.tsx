@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider, createTheme, experimental_sx as sx, Experimental_CssVarsProvider as CssVarsProvider } from '@mui/material/styles';
 import type { ThemeOptions } from '@mui/material/styles';
 import { inputsCustomizations } from './customizations/inputs';
 import { colorSchemes, typography, shadows, shape } from './themePrimitives';
@@ -16,11 +16,7 @@ export default function AppTheme(props: AppThemeProps) {
     return disableCustomTheme
       ? {}
       : createTheme({
-          cssVariables: {
-            colorSchemeSelector: 'data-mui-color-scheme',
-            cssVarPrefix: 'template',
-          },
-          colorSchemes,
+          palette: colorSchemes.light.palette,
           typography,
           shadows,
           shape,
@@ -34,8 +30,10 @@ export default function AppTheme(props: AppThemeProps) {
     return <React.Fragment>{children}</React.Fragment>;
   }
   return (
-    <ThemeProvider theme={theme} disableTransitionOnChange>
-      {children}
-    </ThemeProvider>
+    <CssVarsProvider defaultMode="dark">
+      <ThemeProvider theme={theme}>
+        {children}
+      </ThemeProvider>
+    </CssVarsProvider>
   );
 }
