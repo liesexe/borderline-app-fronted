@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import "react-datepicker/dist/react-datepicker.css";
 import { registerLocale, setDefaultLocale } from "react-datepicker";
-import { es } from 'date-fns/locale/es';
+import es from 'date-fns/locale/es';
 import { format } from 'date-fns';
 import {
   FormContainer,
   Input,
-  StyledSelect,
   StyledDatePicker,
-  CheckboxContainer,
   ErrorMessage
 } from '../styles/RedeemStyles';
 import { Host } from '../interfaces/Host';
@@ -18,6 +16,7 @@ import AppTheme from '../theme/AppTheme';
 import { Button, Checkbox, CssBaseline, FormControlLabel, Stack, styled } from '@mui/material';
 import ColorModeSelect from '../theme/ColorModeSelect';
 import HostSelect from '../components/Select/HostSelectProps';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 registerLocale('es', es);
 setDefaultLocale('es');
@@ -56,7 +55,7 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
     host: '',
     consent: false
   });
-
+  const navigate = useNavigate();
   const [headerData, setHeaderData] = useState<HeaderData[]>([]);
   const [headerError, setHeaderError] = useState('');
   const [hosts, setHosts] = useState<Host[]>([]);
@@ -65,6 +64,9 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
   const { setIsLoading } = useLoading();
   const [isSearchingDNI, setIsSearchingDNI] = useState(false);
   const [userFound, setUserFound] = useState(false);
+  const [searchParams] = useSearchParams();
+  const hostParam = searchParams.get('host');
+  const [isValidHost, setIsValidHost] = useState(false);
 
   useEffect(() => {
     const fetchHosts = async () => {
@@ -87,10 +89,12 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data: Host[] = await response.json();
     setHosts(data);
+    return data;
     } catch (error) {
         console.error('Error fetching options:', error);
+        return [];
     } finally{
         setIsLoading(false);
     }
@@ -113,9 +117,35 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
         }
     };
 
+    const fetchData = async () => {
+      try {
+        await fetchHeaderData();
+        const fetchedHosts = await fetchHosts();
+        
+        if (hostParam && fetchedHosts) {
+          const selectedHost = fetchedHosts.find(
+            host => host.alias?.toUpperCase() === hostParam.toUpperCase()
+          );
+          
+          if (selectedHost) {
+            setFormData(prev => ({
+              ...prev,
+              host: selectedHost._id
+            }));
+            setIsValidHost(true);
+          }else{
+            navigate('/redeem');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
     fetchHeaderData();
     fetchHosts();
-  }, []);
+    fetchData();
+  }, [hostParam, navigate]);
 
   const clearForm = () => {
     setFormData(prev => ({
@@ -354,6 +384,7 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
                 target: { name: 'host', value }
               } as React.ChangeEvent<HTMLSelectElement>)}
               hasError={validationErrors.host}
+              disabled={isValidHost}
               />
             <FormControlLabel
               control={<Checkbox onChange={handleCheckboxChange} checked={formData.consent} name="termsAccepted" value="termsAccepted" color="primary" />}

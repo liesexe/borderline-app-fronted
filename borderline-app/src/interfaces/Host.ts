@@ -4,4 +4,5 @@ export interface Host {
   lastname: string;
   phone: string;
   email: string;
+  alias?: string;
 }
