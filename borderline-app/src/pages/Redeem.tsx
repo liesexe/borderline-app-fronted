@@ -44,10 +44,12 @@ const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   alignSelf: 'center',
-  width: '115%',
+  width: '110%',
   padding: theme.spacing(4),
   gap: theme.spacing(2),
   margin: 'auto',
+  maxHeight: '90vh',
+  overflowY: 'auto',
   [theme.breakpoints.up('sm')]: {
     maxWidth: '500px',
   },
