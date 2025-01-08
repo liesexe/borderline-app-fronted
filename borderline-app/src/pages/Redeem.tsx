@@ -16,6 +16,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import BirthDatePicker from '../components/DatePicker/BirthDatePickerProps';
 import MuiCard from '@mui/material/Card';
 import TermAndConditions from '../components/TermAndConditions/TermAndConditions';
+import DocumentTypeSelect from '../components/Select/DocumentTypeProps';
 
 const SignInContainer = styled(Stack)(({ theme }) => ({
   height: 'calc((1 - var(--template-frame-height, 0)) * 100dvh)',
@@ -68,6 +69,7 @@ const defaultHeaderData = {
 
 const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
   const [formData, setFormData] = useState({
+    documentType: '',
     documentNumber: '',
     name: '',
     lastname:'',
@@ -184,10 +186,10 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
     setUserFound(false);
   };
 
-  const searchUserByDNI = async (dni: string) => {
+  const searchUserByDocumentTypeAndDocumentNumber = async (documentType: string, documentNumber: string) => {
     setIsSearchingDNI(true);
     try {
-      const response = await fetch(`https://borderline-app-backend.onrender.com/api/customers/${dni}`);
+      const response = await fetch(`https://borderline-app-backend.onrender.com/api/customers/${documentType}/${documentNumber}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -236,20 +238,62 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
 
+    if (name === 'documentType') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        documentNumber: '',
+      }));
+      setValidationErrors(prev => ({
+        ...prev,
+        documentNumber: false,
+      }));
+      return;
+    }
+
     if (name === 'documentNumber') {
-      if (value.length > 8) {
+      let isValid = false;
+      let minLength = 0;
+      let maxLength = 0;
+  
+      switch (formData.documentType) {
+        case 'DNI':
+          minLength = 8;
+          maxLength = 8;
+          isValid = /^\d{8}$/.test(value);
+          break;
+        case 'PA':
+          minLength = 9;
+          maxLength = 12;
+          isValid = /^[a-zA-Z0-9]{9,12}$/.test(value);
+          break;
+        case 'CE':
+          minLength = 8;
+          maxLength = 12;
+          isValid = /^[a-zA-Z0-9]{8,12}$/.test(value);
+          break;
+        default:
+          break;
+      }
+  
+      if (value.length > maxLength) {
         return;
       }
-      if (value.length < 8) {
-        clearForm();
+  
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
+  
+      if (isValid) {
+        searchUserByDocumentTypeAndDocumentNumber(formData.documentType, value);
       }
-      const numericValue = value.replace(/\D/g, '');
-      if (numericValue !== value) {
-        return;
-      }
-      if (value.length === 8) {
-        searchUserByDNI(value);
-      }
+  
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: !isValid,
+      }));
+      return;
     }
 
     setFormData(prev => ({
@@ -284,7 +328,7 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
 
   const validateForm = () => {
     const errors: Record<string, boolean> = {};
-    const fields = ['documentNumber', 'name', 'lastname', 'email', 'phone', 'birthDate', 'host'];
+    const fields = ['documentType', 'documentNumber', 'name', 'lastname', 'email', 'phone', 'birthDate'];
     
     fields.forEach(field => {
       if (!formData[field as keyof typeof formData]) {
@@ -296,7 +340,10 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab') {
+    if (formData.documentType === 'DNI' && !/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab') {
+      e.preventDefault();
+    }
+    if ((formData.documentType === 'PA' || formData.documentType === 'CE') && !/[a-zA-Z0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab') {
       e.preventDefault();
     }
   };
@@ -365,15 +412,26 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
             }}
           >
           <FormControl>
+          <FormLabel htmlFor="documentType">Tipo de documento</FormLabel>
+            <DocumentTypeSelect
+                value={formData.documentType}
+                onChange={(value) => handleChange({
+                  target: { name: 'documentType', value }
+                } as React.ChangeEvent<HTMLSelectElement>)}
+                hasError={validationErrors.documentType}
+            />
+          </FormControl>
+          <FormControl>
               <FormLabel htmlFor="documentNumber">Número de documento</FormLabel>
               <TextField
                 error={validationErrors.documentNumber}
                 id="documentNumber"
-                type="number"
+                type="text"
                 name="documentNumber"
                 placeholder="Número de documento"
                 autoComplete="documentNumber"
                 autoFocus
+                inputProps={{ maxLength: formData.documentType === 'DNI' ? 8 : 12 }}
                 onChange={handleChange}
                 onKeyDown={handleKeyPress}
                 required
