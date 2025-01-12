@@ -30,7 +30,7 @@ export default function AppTheme(props: AppThemeProps) {
     return <React.Fragment>{children}</React.Fragment>;
   }
   return (
-    <CssVarsProvider defaultMode="dark">
+    <CssVarsProvider defaultMode="light">
       <ThemeProvider theme={theme}>
         {children}
       </ThemeProvider>

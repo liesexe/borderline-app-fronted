@@ -45,7 +45,7 @@ const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   alignSelf: 'center',
-  width: '110%',
+  width: '107%',
   padding: theme.spacing(4),
   gap: theme.spacing(2),
   margin: 'auto',
@@ -172,20 +172,6 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
     fetchData();
   }, [hostParam, navigate]);
 
-  const clearForm = () => {
-    setFormData(prev => ({
-      ...prev,
-      name: '',
-      lastname: '',
-      email: '',
-      phone: '',
-      birthDate: null,
-      host: '',
-      consent: false
-    }));
-    setUserFound(false);
-  };
-
   const searchUserByDocumentTypeAndDocumentNumber = async (documentType: string, documentNumber: string) => {
     setIsSearchingDNI(true);
     try {
@@ -200,7 +186,8 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
         lastname: userData.lastname || '',
         email: userData.email || '',
         phone: userData.phone || '',
-        birthDate: userData.birthDate ? new Date(userData.birthDate) : null
+        birthDate: userData.birthDate ? new Date(userData.birthDate) : null,
+        consent: userData.consent || false,
       }));
       setUserFound(true);
     } catch (error) {
@@ -239,15 +226,27 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
     const { name, value } = e.target;
 
     if (name === 'documentType') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
+      setFormData({
+        documentType: value,
         documentNumber: '',
-      }));
-      setValidationErrors(prev => ({
-        ...prev,
+        name: '',
+        lastname: '',
+        email: '',
+        phone: '',
+        birthDate: null,
+        host: '',
+        consent: false,
+      });
+      setValidationErrors({
         documentNumber: false,
-      }));
+        name: false,
+        lastname: false,
+        email: false,
+        phone: false,
+        birthDate: false,
+        host: false,
+      });
+      setUserFound(false);
       return;
     }
 
@@ -437,6 +436,7 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
                 required
                 fullWidth
                 variant="outlined"
+                value={formData.documentNumber}
                 color={validationErrors.documentNumber ? 'error' : 'primary'}
               />
           </FormControl>
@@ -457,6 +457,13 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
                 onChange={handleChange}
                 disabled={userFound}
                 value={formData.name}
+                inputProps={{
+                  style: { 
+                    color: userFound ? 'black' : 'inherit', 
+                    opacity: userFound ? '0.5' : '1',
+                    WebkitTextFillColor: userFound ? 'black' : 'inherit',
+                  },                 
+                }}
               />
           </FormControl>
           <FormControl>
@@ -476,6 +483,13 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
                 onChange={handleChange}
                 disabled={userFound}
                 value={formData.lastname}
+                inputProps={{
+                  style: { 
+                    color: userFound ? 'black' : 'inherit', 
+                    opacity: userFound ? '0.5' : '1',
+                    WebkitTextFillColor: userFound ? 'black' : 'inherit',
+                  },                 
+                }}
               />
           </FormControl>
           <FormControl>
@@ -495,6 +509,13 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
                 disabled={userFound}
                 onChange={handleChange}
                 value={formData.email}
+                inputProps={{
+                  style: { 
+                    color: userFound ? 'black' : 'inherit', 
+                    opacity: userFound ? '0.5' : '1',
+                    WebkitTextFillColor: userFound ? 'black' : 'inherit',
+                  },                 
+                }}
               />
           </FormControl>
           <FormControl>
@@ -514,6 +535,13 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
                 disabled={userFound}
                 onChange={handleChange}
                 value={formData.phone}
+                inputProps={{
+                  style: { 
+                    color: userFound ? 'black' : 'inherit', 
+                    opacity: userFound ? '0.5' : '1',
+                    WebkitTextFillColor: userFound ? 'black' : 'inherit',
+                  },                 
+                }}
               />
           </FormControl>
           <FormControl>
@@ -539,7 +567,15 @@ const Redeem: React.FC = (props: { disableCustomTheme?: boolean }) => {
           </FormControl>
           <TermAndConditions open={open} handleClose={handleClose} />
           <FormControlLabel
-              control={<Checkbox value="termsAccepted" color="primary" onChange={handleCheckboxChange} name="termsAccepted" checked={formData.consent}/>}
+              control={
+              <Checkbox 
+                value={formData.consent} 
+                color="primary" 
+                onChange={handleCheckboxChange} 
+                name="consent" 
+                checked={formData.consent}
+                disabled={userFound}
+              />}
               label={
                 <Typography sx={{ textAlign: 'center' }}>
               Acepto los {' '}
